@@ -15,6 +15,7 @@ Les options (demandes non confirmées) et les séjours annulés ne sont pas expo
 """
 import datetime
 import glob
+import hashlib
 import json
 import os
 import sys
@@ -49,7 +50,7 @@ def ics(logement, sejours, stamp):
               'CALSCALE:GREGORIAN', 'METHOD:PUBLISH']
     for s in sorted(sejours, key=lambda x: x['arrivee']):
         lignes += ['BEGIN:VEVENT',
-                   'UID:' + s['id'] + '@ledahudelatania.fr',
+                   'UID:' + hashlib.sha1(('ledahu-' + str(s['id'])).encode()).hexdigest()[:16] + '@ledahudelatania.fr',
                    'DTSTAMP:' + stamp,
                    'DTSTART;VALUE=DATE:' + s['arrivee'].replace('-', ''),
                    'DTEND;VALUE=DATE:' + s['depart'].replace('-', ''),

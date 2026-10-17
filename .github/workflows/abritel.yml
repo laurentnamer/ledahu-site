@@ -8,6 +8,8 @@ on:
   schedule:
     - cron: "40 4 * * *"   # 6:40 l'été, 5:40 l'hiver (heure de Paris)
   workflow_dispatch:
+  push:
+    paths: ['.github/workflows/abritel.yml']
 
 permissions:
   contents: write

@@ -23,8 +23,11 @@ jobs:
         run: |
           set -euo pipefail
           get() {
-            curl -fsSL --retry 3 --max-time 60 -A "Mozilla/5.0" "$2" -o /tmp/$1.ics
-            grep -q "BEGIN:VCALENDAR" /tmp/$1.ics
+            code=$(curl -sSL --retry 3 --max-time 60 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36" -H "Accept: text/calendar,*/*" -w '%{http_code}' "$2" -o /tmp/$1.ics) || true
+            if ! grep -q "BEGIN:VCALENDAR" /tmp/$1.ics; then
+              echo "::warning::$1 : HTTP $code, $(wc -c < /tmp/$1.ics) octets, début : $(head -c 150 /tmp/$1.ics | tr -d '\r\n' | tr -cd '[:print:]')"
+              exit 1
+            fi
             tr -d '\r' < /tmp/$1.ics | grep -E '^(BEGIN:VEVENT|END:VEVENT|UID:|DTSTART|DTEND|SUMMARY:)' > abritel/$1.ics
             test -s abritel/$1.ics
           }

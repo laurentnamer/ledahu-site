@@ -22,6 +22,7 @@ jobs:
       - name: Télécharger et filtrer
         run: |
           set -euo pipefail
+          mkdir -p abritel
           get() {
             code=$(curl -sSL --retry 3 --max-time 60 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36" -H "Accept: text/calendar,*/*" -w '%{http_code}' "$2" -o /tmp/$1.ics) || true
             if ! grep -q "BEGIN:VCALENDAR" /tmp/$1.ics; then

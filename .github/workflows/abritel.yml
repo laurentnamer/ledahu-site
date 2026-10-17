@@ -1,0 +1,38 @@
+name: Copie des calendriers Abritel
+
+# Récupère chaque matin les calendriers iCal d'Abritel et les dépose dans abritel/,
+# pour que la synchro de 7:57 les lise directement depuis le dépôt.
+# On ne garde que les lignes utiles (dates, UID, SUMMARY) : pas de description ni de contact.
+
+on:
+  schedule:
+    - cron: "40 4 * * *"   # 6:40 l'été, 5:40 l'hiver (heure de Paris)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  copie:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Télécharger et filtrer
+        run: |
+          set -euo pipefail
+          get() {
+            curl -fsSL --retry 3 --max-time 60 -A "Mozilla/5.0" "$2" -o /tmp/$1.ics
+            grep -q "BEGIN:VCALENDAR" /tmp/$1.ics
+            tr -d '\r' < /tmp/$1.ics | grep -E '^(BEGIN:VEVENT|END:VEVENT|UID:|DTSTART|DTEND|SUMMARY:)' > abritel/$1.ics
+            test -s abritel/$1.ics
+          }
+          get chalet "https://www.abritel.fr/icalendar/d912590ef8074341bb3488d4fea355ca.ics?nonTentative&includeTentative=true"
+          get appartement "https://www.abritel.fr/icalendar/f152dd0b250d4dc79b416af605fa80e5.ics?nonTentative&includeTentative=true"
+          date -u +%Y-%m-%dT%H:%M:%SZ > abritel/recupere-le.txt
+      - name: Enregistrer
+        run: |
+          git config user.name "Laurent Namer"
+          git config user.email "laurent.namer@gmail.com"
+          git add abritel
+          git commit -m "Calendriers Abritel du $(date -u +%Y-%m-%d)" || exit 0
+          git push

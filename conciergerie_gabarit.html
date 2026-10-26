@@ -50,6 +50,12 @@ h1{font-family:var(--f-display);font-weight:400;font-size:clamp(2rem,6vw,3rem);l
 .ct span{user-select:all;overflow-wrap:anywhere}
 .copy{font:inherit;font-size:.74rem;border:0;background:var(--bg);color:var(--ink);border-radius:2px;padding:2px 7px;cursor:pointer}
 .missing{font-size:.85rem;color:var(--warn);background:var(--warn-soft);border-radius:3px;padding:4px 8px;justify-self:start}
+.req{display:grid;gap:2px;border-left:3px solid var(--larch);background:var(--larch-soft);border-radius:0 3px 3px 0;padding:6px 10px;font-size:.9rem;max-width:62ch}
+.req b{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--larch)}
+.xl{font:inherit;font-size:.86rem;font-weight:600;border:1px solid var(--pine);background:var(--pine);color:var(--bg);border-radius:999px;padding:7px 14px;cursor:pointer}
+.xl:disabled{opacity:.5;cursor:default}
+.xl:focus-visible{outline:2px solid var(--larch);outline-offset:2px}
+.xlmsg{font-size:.82rem;color:var(--muted)}
 .empty{color:var(--muted);background:var(--paper);border:1px dashed var(--line);border-radius:4px;padding:18px}
 footer{font-size:.8rem;color:var(--muted)}
 </style>
@@ -67,14 +73,19 @@ footer{font-size:.8rem;color:var(--muted)}
       <button type="button" id="f-chalet" data-f="chalet" aria-pressed="false">Chalet</button>
       <button type="button" id="f-appartement" data-f="appartement" aria-pressed="false">Appartement</button>
     </div>
-    <div class="legend"><span>Option : réservation pas encore confirmée</span><span>Famille du propriétaire : séjour des propriétaires</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button type="button" class="xl" id="xlBtn" hidden>Télécharger le tableau Excel</button><span class="xlmsg" id="xlMsg" role="status"></span></div>
   </div>
+  <div class="legend"><span>Option : réservation pas encore confirmée</span><span>Famille du propriétaire : séjour des propriétaires</span></div>
 
   <div id="list"></div>
   <footer id="foot"></footer>
 </div>
 
 <script type="application/json" id="planning">__DATA__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>
+__XLSX_JS__
+</script>
 <script>
 (function(){
 const P=JSON.parse(document.getElementById('planning').textContent);
@@ -97,8 +108,9 @@ function render(){
       <div class="when"><span class="d">${fmt(s.arrivee,{weekday:'short',day:'numeric',month:'short'})} → ${fmt(s.depart,{weekday:'short',day:'numeric',month:'short'})}</span><span class="n">${s.nuits} nuits</span></div>
       <div class="who">
         <div class="top"><span class="name">${esc(s.nom)}</span><span class="chip ${s.logement}">${LG[s.logement]||''}</span>${s.statut==='option'?'<span class="chip option">Option</span>':''}${s.statut==='proprio'?'<span class="chip proprio">Propriétaires</span>':''}</div>
-        ${s.statut==='proprio'?'':`<div class="meta">${s.personnes?`<span>${s.personnes} personnes</span>`:'<span>Nombre de personnes à confirmer</span>'}${s.source?`<span>Réservé via ${esc(s.source)}</span>`:''}</div>`}
+        ${s.statut==='proprio'?'':`<div class="meta">${s.personnes?`<span>${s.personnes} personnes${s.composition?' ('+esc(s.composition)+')':''}</span>`:s.composition?`<span>${esc(s.composition)}</span>`:'<span>Nombre de personnes à confirmer</span>'}${s.source?`<span>Réservé via ${esc(s.source)}</span>`:''}</div>`}
         ${(s.email||s.tel)?`<div class="contacts">${s.tel?ct('le téléphone',s.tel):''}${s.email?ct("l’e-mail",s.email):''}</div>`:''}
+        ${s.demandes?`<div class="req"><b>Demande particulière</b><span>${esc(s.demandes)}</span></div>`:''}
         ${s.aCompleter?'<span class="missing">Coordonnées pas encore transmises par le propriétaire</span>':''}
       </div>
     </article>`).join('')}</section>`).join('')+'</div>';
@@ -110,6 +122,21 @@ document.addEventListener('click',e=>{
 });
 function sel(c){const s=c.previousElementSibling;const r=document.createRange();r.selectNodeContents(s);const w=getSelection();w.removeAllRanges();w.addRange(r);}
 document.getElementById('foot').textContent='Mis à jour le '+fmt(P.majLe,{day:'numeric',month:'long',year:'numeric'})+'. Les dates passées disparaissent automatiquement.';
+async function exporter(){const b=document.getElementById('xlBtn'),m=document.getElementById('xlMsg');m.textContent='';
+  if(!window.ExcelJS){m.textContent='Le générateur Excel n’a pas pu se charger. Rechargez la page.';return;}
+  b.disabled=true;
+  try{const rows=P.sejours.map(s=>({logement:s.logement,arrivee:s.arrivee,depart:s.depart,
+      nom:s.statut==='proprio'?'Nos vacances':s.nom,
+      personnes:s.statut==='proprio'?'':(s.composition||(s.personnes?s.personnes+' personnes':'')),
+      tel:s.tel,email:s.email,
+      commentaire:[s.statut==='option'?'Option, pas encore confirmée':'',s.demandes||''].filter(Boolean).join(' — ')}));
+    const blob=await excelOccupants(rows);
+    const dl=await claude.use('downloads');if(!dl){m.textContent='Le téléchargement n’est pas disponible dans cette vue.';return;}
+    await dl.save({filename:'Liste_occupants_La_Tania_'+P.majLe+'.xlsx',data:blob});m.textContent='Tableau téléchargé.';}
+  catch(x){if(!(x&&x.code==='declined'))m.textContent='Tableau non généré : '+(x&&x.message||x);}
+  finally{b.disabled=false;}}
+document.getElementById('xlBtn').addEventListener('click',exporter);
+(async()=>{const dl=window.claude?await claude.use('downloads'):null;document.getElementById('xlBtn').hidden=!dl;})();
 render();
 })();
 </script>

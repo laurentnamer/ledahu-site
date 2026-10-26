@@ -51,6 +51,19 @@ def garder(s, aujourdhui):
     return True
 
 
+def composition(s):
+    if (s.get('composition') or '').strip():
+        return s['composition'].strip()
+    m = re.search(r'(\d+)\s+adultes?(?:,\s*(\d+)\s+enfants?)?', s.get('notes') or '', re.I)
+    if m:
+        a, e = int(m.group(1)), int(m.group(2) or 0)
+        txt = '%d adulte%s' % (a, 's' if a > 1 else '')
+        if e:
+            txt += ', %d enfant%s' % (e, 's' if e > 1 else '')
+        return txt
+    return ''
+
+
 def ligne(s):
     mail, tel = contact(s)
     vac = s.get('statut') == 'bloque' and s.get('source') == 'Famille / amis'
@@ -69,6 +82,8 @@ def ligne(s):
         'statut': 'proprio' if vac else ('option' if s.get('statut') == 'option' else 'confirme'),
         'source': s.get('source') if s.get('source') in ('Abritel', 'Direct') else '',
         'aCompleter': (not vac) and not (mail or tel),
+        'composition': '' if vac else composition(s),
+        'demandes': (s.get('demandes') or '').strip(),
     }
 
 
@@ -89,7 +104,8 @@ def main():
             except ValueError:
                 pass
     gabarit = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conciergerie_gabarit.html'), encoding='utf-8').read()
-    html = gabarit.replace('__DATA__', data.replace('</', '<\\/'))
+    xl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'occupants_xlsx.js'), encoding='utf-8').read()
+    html = gabarit.replace('__XLSX_JS__', xl).replace('__DATA__', data.replace('</', '<\\/'))
     with open(sys.argv[2], 'w', encoding='utf-8') as fh:
         fh.write(html)
     print('changé', len(lignes), 'séjours')

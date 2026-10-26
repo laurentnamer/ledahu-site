@@ -1,0 +1,115 @@
+<title>Planning conciergerie La Tania</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one column of arrivals grouped by month; each stay is a row with dates on the left, guest and contact on the right */
+:root{
+  --bg:#f4f6f5; --paper:#ffffff; --ink:#17241f; --muted:#5b6a64; --line:#d8e0dc;
+  --pine:#1f4d3a; --pine-soft:#e2ede7; --larch:#a65a17; --larch-soft:#f5e7d9; --warn:#9a3b12; --warn-soft:#fbe9e0;
+  --f-display:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1614; --paper:#151f1c; --ink:#e7eeeb; --muted:#9caca5; --line:#27342f;
+  --pine:#8fd1b2; --pine-soft:#1b2f27; --larch:#e8a466; --larch-soft:#33261a; --warn:#f0a07a; --warn-soft:#3a2219; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1614; --paper:#151f1c; --ink:#e7eeeb; --muted:#9caca5; --line:#27342f;
+  --pine:#8fd1b2; --pine-soft:#1b2f27; --larch:#e8a466; --larch-soft:#33261a; --warn:#f0a07a; --warn-soft:#3a2219; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
+header{display:grid;gap:6px}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--larch);font-weight:600}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(2rem,6vw,3rem);line-height:1.05;margin:0;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:60ch}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper)}
+.seg button{font:inherit;font-size:.86rem;border:0;background:transparent;color:var(--ink);padding:7px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible,.copy:focus-visible{outline:2px solid var(--larch);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.month{display:grid;gap:10px}
+.month h2{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;text-transform:capitalize}
+.stay{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:14px 20px;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:14px 16px}
+@media (max-width:620px){.stay{grid-template-columns:1fr}}
+.when{display:grid;gap:2px;align-content:start}
+.when .d{font-weight:600;font-variant-numeric:tabular-nums}
+.when .n{font-size:.82rem;color:var(--muted)}
+.who{display:grid;gap:8px;min-width:0}
+.top{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.name{font-weight:600;font-size:1.05rem}
+.chip{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chip.chalet{background:var(--pine-soft);color:var(--pine)}
+.chip.appartement{background:var(--larch-soft);color:var(--larch)}
+.chip.option{background:transparent;border:1px dashed var(--muted);color:var(--muted)}
+.chip.proprio{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted)}
+.contacts{display:flex;flex-wrap:wrap;gap:8px}
+.ct{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:3px;padding:3px 4px 3px 8px;font-size:.88rem;max-width:100%;min-width:0}
+.ct span{user-select:all;overflow-wrap:anywhere}
+.copy{font:inherit;font-size:.74rem;border:0;background:var(--bg);color:var(--ink);border-radius:2px;padding:2px 7px;cursor:pointer}
+.missing{font-size:.85rem;color:var(--warn);background:var(--warn-soft);border-radius:3px;padding:4px 8px;justify-self:start}
+.empty{color:var(--muted);background:var(--paper);border:1px dashed var(--line);border-radius:4px;padding:18px}
+footer{font-size:.8rem;color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">La Tania · Courchevel</span>
+    <h1>Planning conciergerie</h1>
+    <p class="sub">Arrivées à venir au chalet Le Dahu du Hameau et à l’appartement Le Petit Dahu. Arrivées et départs le jour indiqué ; le jour de départ, le logement se libère pour le ménage.</p>
+  </header>
+
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Logement">
+      <button type="button" id="f-tous" data-f="tous" aria-pressed="true">Tous</button>
+      <button type="button" id="f-chalet" data-f="chalet" aria-pressed="false">Chalet</button>
+      <button type="button" id="f-appartement" data-f="appartement" aria-pressed="false">Appartement</button>
+    </div>
+    <div class="legend"><span>Option : réservation pas encore confirmée</span><span>Famille du propriétaire : séjour des propriétaires</span></div>
+  </div>
+
+  <div id="list"></div>
+  <footer id="foot"></footer>
+</div>
+
+<script type="application/json" id="planning">__DATA__</script>
+<script>
+(function(){
+const P=JSON.parse(document.getElementById('planning').textContent);
+const LG={chalet:'Chalet',appartement:'Appartement'};
+const D=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,d));};
+const fmt=(s,o)=>D(s).toLocaleDateString('fr-FR',Object.assign({timeZone:'UTC'},o));
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let filtre='tous';
+try{const v=localStorage.getItem('conc-filtre');if(LG[v])filtre=v;}catch(e){}
+function ct(kind,val){return `<span class="ct"><span>${esc(val)}</span><button type="button" class="copy" data-copy="${esc(val)}" aria-label="Copier ${kind}">Copier</button></span>`;}
+function render(){
+  document.querySelectorAll('[data-f]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===filtre));
+  const rows=P.sejours.filter(s=>filtre==='tous'||s.logement===filtre);
+  const el=document.getElementById('list');
+  if(!rows.length){el.innerHTML='<p class="empty">Aucun séjour à venir pour ce logement.</p>';return;}
+  const groups=[];
+  rows.forEach(s=>{const k=s.arrivee.slice(0,7);let g=groups[groups.length-1];if(!g||g.k!==k){g={k,items:[]};groups.push(g);}g.items.push(s);});
+  el.innerHTML='<div style="display:grid;gap:26px">'+groups.map(g=>`<section class="month"><h2>${fmt(g.k+'-01',{month:'long',year:'numeric'})}</h2>${g.items.map(s=>`
+    <article class="stay">
+      <div class="when"><span class="d">${fmt(s.arrivee,{weekday:'short',day:'numeric',month:'short'})} → ${fmt(s.depart,{weekday:'short',day:'numeric',month:'short'})}</span><span class="n">${s.nuits} nuits</span></div>
+      <div class="who">
+        <div class="top"><span class="name">${esc(s.nom)}</span><span class="chip ${s.logement}">${LG[s.logement]||''}</span>${s.statut==='option'?'<span class="chip option">Option</span>':''}${s.statut==='proprio'?'<span class="chip proprio">Propriétaires</span>':''}</div>
+        ${s.statut==='proprio'?'':`<div class="meta">${s.personnes?`<span>${s.personnes} personnes</span>`:'<span>Nombre de personnes à confirmer</span>'}${s.source?`<span>Réservé via ${esc(s.source)}</span>`:''}</div>`}
+        ${(s.email||s.tel)?`<div class="contacts">${s.tel?ct('le téléphone',s.tel):''}${s.email?ct("l’e-mail",s.email):''}</div>`:''}
+        ${s.aCompleter?'<span class="missing">Coordonnées pas encore transmises par le propriétaire</span>':''}
+      </div>
+    </article>`).join('')}</section>`).join('')+'</div>';
+}
+document.addEventListener('click',e=>{
+  const f=e.target.closest('[data-f]');if(f){filtre=f.dataset.f;try{localStorage.setItem('conc-filtre',filtre)}catch(_){ }render();return;}
+  const c=e.target.closest('[data-copy]');if(c){const v=c.dataset.copy;const ok=()=>{c.textContent='Copié';setTimeout(()=>c.textContent='Copier',1500);};
+    try{navigator.clipboard.writeText(v).then(ok,()=>sel(c));}catch(_){sel(c);}}
+});
+function sel(c){const s=c.previousElementSibling;const r=document.createRange();r.selectNodeContents(s);const w=getSelection();w.removeAllRanges();w.addRange(r);}
+document.getElementById('foot').textContent='Mis à jour le '+fmt(P.majLe,{day:'numeric',month:'long',year:'numeric'})+'. Les dates passées disparaissent automatiquement.';
+render();
+})();
+</script>

@@ -1,8 +1,10 @@
-name: Copie des calendriers Abritel
+name: Copie des calendriers Abritel et contrôle de la domotique
 
 # Récupère chaque matin les calendriers iCal d'Abritel et les dépose dans abritel/,
 # pour que la synchro de 7:57 les lise directement depuis le dépôt.
 # On ne garde que les lignes utiles (dates, UID, SUMMARY) : pas de description ni de contact.
+# Contrôle aussi que la domotique du chalet répond. Son adresse reste dans le secret JEEDOM_URL
+# (jamais dans ce dépôt public) ; seul le résultat est écrit dans domotique/statut.txt.
 
 on:
   schedule:
@@ -42,3 +44,40 @@ jobs:
           git add abritel
           git commit -m "Calendriers Abritel du $(date -u +%Y-%m-%d)" || exit 0
           git push
+      - name: Contrôler la domotique
+        if: always()
+        env:
+          JEEDOM_URL: ${{ secrets.JEEDOM_URL }}
+        run: |
+          mkdir -p domotique
+          quand=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          if [ -z "$JEEDOM_URL" ]; then
+            printf 'verifie_le=%s\netat=NON CONFIGURE\ndetail=secret JEEDOM_URL absent\n' "$quand" > domotique/statut.txt
+            exit 0
+          fi
+          res=$(curl -sSL --max-time 30 -o /tmp/jeedom.html -w '%{http_code} %{time_total}' "$JEEDOM_URL" 2>/tmp/jeedom.err) || res="000 0"
+          code=${res%% *}; duree=${res##* }
+          titre=$(tr -d '\r\n' < /tmp/jeedom.html 2>/dev/null | grep -o -i '<title>[^<]*' | head -1 | sed 's/<title>//I' | tr -cd '[:print:]' | cut -c1-80)
+          if [ "$code" -ge 200 ] && [ "$code" -lt 400 ] && grep -q -i 'jeedom' /tmp/jeedom.html && ! echo "$titre" | grep -q -i -E 'error|erreur|offline|unavailable|introuvable|not found'; then
+            etat=OK
+          else
+            etat="HORS LIGNE"
+          fi
+          printf 'verifie_le=%s\netat=%s\nhttp=%s\nduree_s=%s\ntitre=%s\nerreur=%s\n' "$quand" "$etat" "$code" "$duree" "$titre" "$(head -c 120 /tmp/jeedom.err 2>/dev/null | tr -d '\n' | sed "s#$JEEDOM_URL#<adresse>#g")" > domotique/statut.txt
+          cat domotique/statut.txt
+      - name: Enregistrer le contrôle
+        if: always()
+        run: |
+          git config user.name "Laurent Namer"
+          git config user.email "laurent.namer@gmail.com"
+          git pull -q --rebase || true
+          git add domotique
+          git commit -m "Contrôle domotique du $(date -u +%Y-%m-%d)" || exit 0
+          git push
+      - name: Alerte si la domotique ne répond pas
+        if: always()
+        run: |
+          if grep -q '^etat=HORS LIGNE' domotique/statut.txt; then
+            echo "::error::La domotique du chalet ne répond pas (voir domotique/statut.txt)"
+            exit 1
+          fi

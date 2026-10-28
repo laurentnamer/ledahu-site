@@ -75,7 +75,7 @@ footer{font-size:.8rem;color:var(--muted)}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button type="button" class="xl" id="xlBtn" hidden>Télécharger le tableau Excel</button><span class="xlmsg" id="xlMsg" role="status"></span></div>
   </div>
-  <div class="legend"><span>Option : réservation pas encore confirmée</span><span>Famille du propriétaire : séjour des propriétaires</span></div>
+  <div class="legend"><span>Option : réservation pas encore confirmée</span><span>Famille Namer : séjour des propriétaires</span></div>
 
   <div id="list"></div>
   <footer id="foot"></footer>
@@ -126,7 +126,7 @@ async function exporter(){const b=document.getElementById('xlBtn'),m=document.ge
   if(!window.ExcelJS){m.textContent='Le générateur Excel n’a pas pu se charger. Rechargez la page.';return;}
   b.disabled=true;
   try{const rows=P.sejours.map(s=>({logement:s.logement,arrivee:s.arrivee,depart:s.depart,
-      nom:s.statut==='proprio'?'Nos vacances':s.nom,
+      nom:s.statut==='proprio'?'Famille Namer':s.nom,
       personnes:s.statut==='proprio'?'':(s.composition||(s.personnes?s.personnes+' personnes':'')),
       tel:s.tel,email:s.email,
       commentaire:[s.statut==='option'?'Option, pas encore confirmée':'',s.demandes||''].filter(Boolean).join(' — ')}));

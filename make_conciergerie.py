@@ -67,7 +67,7 @@ def composition(s):
 def ligne(s):
     mail, tel = contact(s)
     vac = s.get('statut') == 'bloque' and s.get('source') == 'Famille / amis'
-    nom = 'Famille du propriétaire' if vac else (s.get('client') or '').strip()
+    nom = 'Famille Namer' if vac else (s.get('client') or '').strip()
     a = datetime.date.fromisoformat(s['arrivee'])
     b = datetime.date.fromisoformat(s['depart'])
     return {

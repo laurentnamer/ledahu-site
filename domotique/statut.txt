@@ -1,6 +1,6 @@
-verifie_le=2026-10-27T08:15:09Z
-etat=OK
-http=200
-duree_s=1.498101
-titre=Jeedom
+verifie_le=2026-10-28T05:17:43Z
+etat=HORS LIGNE
+http=500
+duree_s=0.519323
+titre=500 Internal Server Error
 erreur=

@@ -1,6 +1,6 @@
-verifie_le=2026-11-10T05:29:42Z
+verifie_le=2026-11-11T12:07:07Z
 etat=OK
 http=200
-duree_s=1.320747
+duree_s=1.010004
 titre=Jeedom
 erreur=

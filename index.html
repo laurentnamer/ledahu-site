@@ -259,15 +259,17 @@ const today=iso(new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth()
 const LANGS=['fr','en','nl','de','it','zh','ja'];const navLang=()=>{const n=(navigator.language||'fr').slice(0,2).toLowerCase();return LANGS.includes(n)?n:'en';};let lang='fr'; try{const s=localStorage.getItem('dahu-lang');lang=LANGS.includes(s)?s:navLang();}catch(e){lang=navLang();}
 let home='chalet', arr=null, dep=null, view=null, adults=2, kids=0, copiedFlag=false;
 
-function priceOf(lg,d){for(const p of DATA.tarifs[lg])if(p.du<=d&&d<p.au)return p.bloque?null:p.prix;return null;}
+const XF=()=>promo==='n2'?10:1;
+function priceOf(lg,d){for(const p of DATA.tarifs[lg])if(p.du<=d&&d<p.au)return p.bloque?null:p.prix*XF();return null;}
 function taken(lg,d){return DATA.occupe[lg].some(o=>o.du<=d&&d<o.au);}
 function nightFree(lg,d){return d>=today&&priceOf(lg,d)!=null&&!taken(lg,d);}
 function canArrive(lg,d){return nightFree(lg,d);}
 function canDepart(lg,d){return arr&&d>arr;} // range validity checked separately
 function rangeOk(lg,a,b){for(let d=a;d<b;d=add(d,1))if(!nightFree(lg,d))return false;return true;}
 function quoteGross(lg,a,b){let t=0;for(let d=a;d<b;d=add(d,1))t+=priceOf(lg,d)||0;return t;}
-const PROMO_H='6a28fbc801da6d0aef051e81001ee138d25135ea0aa9631c14ab9e1b20c9fdf3',FIDELE_H='62b64800eca284ff58655d9834a6e2f1a19f9c707840f6b0efb0e786c31a0d10';let promo=false,promoErr=false;
-async function checkPromo(code){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code.trim().toLowerCase()));const h=[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');return h===PROMO_H?'famille':h===FIDELE_H?'fidele':false;}catch(_){return false;}}
+const PROMO_H='6a28fbc801da6d0aef051e81001ee138d25135ea0aa9631c14ab9e1b20c9fdf3',FIDELE_H='62b64800eca284ff58655d9834a6e2f1a19f9c707840f6b0efb0e786c31a0d10',N2_H='c4c72dad943379f55ced9b4e21cce96a0dc1054b276983ee331bad250dad7c70';let promo=false,promoErr=false;
+try{if(location.hash==='#dahu-reset'){localStorage.removeItem('dahu-n2');}else if(localStorage.getItem('dahu-n2')==='1')promo='n2';}catch(_){}
+async function checkPromo(code){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code.trim().toLowerCase()));const h=[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');return h===PROMO_H?'famille':h===FIDELE_H?'fidele':h===N2_H?'n2':false;}catch(_){return false;}}
 const PS=DATA.promoSaison;function promoOn(){return !!(PS&&today>=PS.debut&&today<=PS.fin);}
 function promoNight(d){return promoOn()&&d>=PS.nuitsDu&&d<PS.nuitsAu;}
 function quoteSaison(lg,a,b){let t=0;for(let d=a;d<b;d=add(d,1)){const p=priceOf(lg,d)||0;t+=promoNight(d)?p*(1-PS.remise):p;}return Math.round(t);}
@@ -277,7 +279,7 @@ function quoteKind(lg,a,b){const g=quoteGross(lg,a,b);if(promo==='famille')retur
   if(ss<g&&ss<=lgs&&ss<=fd)return {tot:ss,k:'saison'};if(lgs<g&&lgs<fd)return {tot:lgs,k:'long'};if(fd<g)return {tot:fd,k:'fidele'};return {tot:g,k:''};}
 function quote(lg,a,b){return quoteKind(lg,a,b).tot;}
 function dispPrice(d,p){return promoNight(d)?Math.round(p*(1-PS.remise)):p;}
-function minFrom(lg){let m=Infinity;for(const p of DATA.tarifs[lg])if(!p.bloque&&p.au>today)m=Math.min(m,p.prix);return m===Infinity?null:m;}
+function minFrom(lg){let m=Infinity;for(const p of DATA.tarifs[lg])if(!p.bloque&&p.au>today)m=Math.min(m,p.prix*XF());return m===Infinity?null:m;}
 function money(n){return n.toLocaleString(T[lang].loc,{style:'currency',currency:'EUR',maximumFractionDigits:0});}
 function long(s){return D(s).toLocaleDateString(T[lang].loc,{weekday:'short',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});}
 function firstMonth(lg){for(const p of DATA.tarifs[lg]){if(p.bloque||p.au<=today)continue;let d=p.du>today?p.du:today;for(;d<p.au;d=add(d,1))if(!taken(lg,d))return d.slice(0,7);}return today.slice(0,7);}
@@ -314,7 +316,7 @@ function recapText(){const t=T[lang],h=home==='chalet'?t.chalet:t.appt,n=nightsB
 function formUrl(){const f=DATA.formulaire;if(!f||!f.url)return null;const c=f.champs||{},p=new URLSearchParams({usp:'pp_url'});
   const h=home==='chalet'?'Chalet – Le Dahu du Hameau':'Appartement – Le Petit Dahu';
   const set=(k,v)=>{if(c[k])p.set(c[k],v)};set('logement',h);set('arrivee',arr);set('depart',dep);set('nuits',String(nightsBetween(arr,dep)));
-  set('prix',String(quote(home,arr,dep)));set('adultes',String(adults));set('enfants',String(kids));set('langue',lang==='fr'?'FR':'EN');{const ms=[];if(lang!=='fr'&&lang!=='en')ms.push('Langue du site : '+lang.toUpperCase());if(promo==='famille')ms.push('Code promo famille et amis appliqué (−30 %)');else if(quoteKind(home,arr,dep).k==='fidele')ms.push('Code fidélité appliqué (−10 %)');else if(promo==='fidele')ms.push('Code fidélité saisi (remise plus avantageuse appliquée à la place)');if(promo!=='famille'&&quoteKind(home,arr,dep).k==='saison')ms.push('Promo janvier appliquée (−20 %)');if(svcList().length)ms.push('Services souhaités : '+svcText(SVT.fr)+' (env. '+svcTotal()+' € conciergerie)');if(ms.length)set('message',ms.join(' · '));}
+  set('prix',String(quote(home,arr,dep)));set('adultes',String(adults));set('enfants',String(kids));set('langue',lang==='fr'?'FR':'EN');{const ms=[];if(promo==='n2')ms.push('Code N2Solutions saisi : prix ×10 (blague pour Ciprian)');if(lang!=='fr'&&lang!=='en')ms.push('Langue du site : '+lang.toUpperCase());if(promo==='famille')ms.push('Code promo famille et amis appliqué (−30 %)');else if(quoteKind(home,arr,dep).k==='fidele')ms.push('Code fidélité appliqué (−10 %)');else if(promo==='fidele')ms.push('Code fidélité saisi (remise plus avantageuse appliquée à la place)');if(promo!=='famille'&&quoteKind(home,arr,dep).k==='saison')ms.push('Promo janvier appliquée (−20 %)');if(svcList().length)ms.push('Services souhaités : '+svcText(SVT.fr)+' (env. '+svcTotal()+' € conciergerie)');if(ms.length)set('message',ms.join(' · '));}
   return f.url+(f.url.includes('?')?'&':'?')+p.toString();}
 
 function renderSum(){const t=T[lang],el=$('#sum');
@@ -333,7 +335,7 @@ function renderSum(){const t=T[lang],el=$('#sum');
    <div class="ppl"><label>${t.adults}<input type="number" id="adults" min="1" max="${CAP[home]}" value="${adults}"></label><label>${t.children}<input type="number" id="kids" min="0" max="${CAP[home]}" value="${kids}"></label></div>
    ${svcBlock()}
    ${ok?`<div class="total"><span class="msg">${t.total}</span><strong>${money(tot)}</strong></div>`:''}
-   ${promo?'':`<div class="promo"><label>${t.promo}<span class="pr-row"><input id="promoIn" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" class="ghost" id="promoBtn">${t.promoBtn}</button></span></label>${promoErr?`<span class="msg warn">${t.promoBad}</span>`:''}</div>`}
+   ${promo&&promo!=='n2'?'':`<div class="promo"><label>${t.promo}<span class="pr-row"><input id="promoIn" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" class="ghost" id="promoBtn">${t.promoBtn}</button></span></label>${promoErr?`<span class="msg warn">${t.promoBad}</span>`:''}</div>`}
    ${warn?`<p class="msg warn">${warn}</p>`:''}
    ${valid?(url?`<a class="cta" href="${url}" target="_blank" rel="noopener">${t.send}</a>`:`<p class="msg">${t.soon}</p><pre class="recap" id="recap">${recapText()}</pre><button type="button" class="ghost" id="copy">${copiedFlag?t.copied:t.copy}</button>`):`<span class="cta" aria-disabled="true">${t.send}</span>`}
    <p class="msg">${t.taxe}</p><button type="button" class="ghost" id="reset">${t.reset}</button>`;}
@@ -389,7 +391,11 @@ document.addEventListener('click',e=>{
   if(e.target.id==='copy'){const txt=recapText();const done=()=>{copiedFlag=true;renderSum();};
     try{navigator.clipboard.writeText(txt).then(done,()=>{selectRecap();});}catch(_){selectRecap();}}
 });
-async function applyPromo(){const v=($('#promoIn')||{}).value||'';promo=await checkPromo(v);promoErr=!promo&&v.trim()!=='';renderSum();}
+async function applyPromo(){const v=($('#promoIn')||{}).value||'';const r=await checkPromo(v);
+  if(promo==='n2'){promoErr=v.trim()!=='';renderSum();return;}
+  promo=r;promoErr=!promo&&v.trim()!=='';
+  if(promo==='n2'){promoErr=false;try{localStorage.setItem('dahu-n2','1')}catch(_){}render();return;}
+  renderSum();}
 document.addEventListener('keydown',e=>{if(e.target&&e.target.id==='promoIn'&&e.key==='Enter'){e.preventDefault();applyPromo();}});
 function selectRecap(){const r=$('#recap');if(!r)return;const s=window.getSelection(),rg=document.createRange();rg.selectNodeContents(r);s.removeAllRanges();s.addRange(rg);}
 document.addEventListener('input',e=>{const sv=e.target.dataset&&e.target.dataset.svc;if(sv){const s=(DATA.services||[]).find(x=>x.id===sv);svc[sv]=Math.max(0,Math.min(s?s.max:9,Math.round(+e.target.value||0)));svcOpen=true;renderSum();const el=$('#svc_'+sv);if(el){el.focus();try{el.select()}catch(_){}}return;}

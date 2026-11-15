@@ -1,6 +1,6 @@
-verifie_le=2026-11-14T11:43:37Z
-etat=HORS LIGNE
-http=503
-duree_s=0.440351
-titre=503 Service Temporarily Unavailable
+verifie_le=2026-11-15T12:13:59Z
+etat=OK
+http=200
+duree_s=1.192455
+titre=Jeedom
 erreur=
